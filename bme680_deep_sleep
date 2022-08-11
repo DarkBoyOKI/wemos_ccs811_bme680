@@ -1,1 +1,38 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include "Adafruit_BME680.h"
 
+Adafruit_BME680 bme;
+
+void setup(){
+  Serial.begin(115200);
+  Wire.begin();
+  WiFi.begin("GTCC1_1", "GtC#594#");
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  while (!Serial);
+  while (!bme.begin()) { /*Serial.println("BME: could not find sensor.");*/ delay(1000); }
+  }
+
+void send_data(){
+  WiFiClient client;
+  HTTPClient http;
+  
+  //target server & url
+  http.begin(client, "http://api.thingspeak.com/update"); //HTTP
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+  //kirim data
+  int resp_code = http.POST("api_key=49Z5JQ9VMRUDUIQH&field1=" + String(bme.temperature) + "&field2=" + bme.humidity + "&field3=" + bme.pressure / 100.0 + "&field4=" + bme.gas_resistance / 1000.0 + "&field5=" + ccs.getCO2() + "&field6=" + ccs.getTVOC());
+  http.end();
+  delay(10);
+  }
+
+void sensor_bme(){
+  if (! bme.performReading()) { /*Serial.println("BME: failed to read.");*/ return; }
+  }
+
+void loop(){
+  sensor_bme();
+  send_data();
+  ESP.deepSleep(30e6);
+  }
